@@ -1,1 +1,38 @@
+name: Generar APK
 
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Descargar proyecto
+        uses: actions/checkout@v4
+
+      - name: Configurar Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Configurar Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Compilar APK
+        run: gradle assembleDebug
+
+      - name: Renombrar APK
+        run: cp app/build/outputs/apk/debug/app-debug.apk Participaciones_Secundaria_v1.0.apk
+
+      - name: Subir APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Participaciones_Secundaria_v1.0
+          path: Participaciones_Secundaria_v1.0.apk
