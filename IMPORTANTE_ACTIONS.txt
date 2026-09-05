@@ -1,0 +1,22 @@
+IMPORTANTE - GITHUB ACTIONS
+
+Este proyecto YA incluye el workflow correcto en:
+.github/workflows/generar-apk.yml
+
+Esta carpeta empieza con punto (.github) y algunos exploradores de archivos la OCULTAN.
+Por eso esta versión del ZIP también incluye una copia visible:
+ACTION_GENERAR_APK_COPIA_VISIBLE.yml
+
+FORMA RECOMENDADA:
+1. Descomprime este ZIP.
+2. Sube TODO el contenido a la RAÍZ del repositorio (build.gradle, settings.gradle, app y .github).
+3. Verifica en GitHub que exista:
+   .github > workflows > generar-apk.yml
+4. Después entra a Actions > Generar APK > Run workflow.
+
+SI .github NO SE SUBE:
+1. En GitHub pulsa Add file > Create new file.
+2. En el nombre escribe exactamente: .github/workflows/generar-apk.yml
+3. Copia dentro el contenido de ACTION_GENERAR_APK_COPIA_VISIBLE.yml
+4. Commit directly to main.
+5. Entra a Actions y aparecerá Generar APK.
