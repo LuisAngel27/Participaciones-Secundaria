@@ -221,8 +221,7 @@ public class MainActivity extends Activity {
         ArrayList<StatRow> rows=db.statsByPeriod(statsGroupId,statsFrom,statsTo);
         int tp=0,tn=0,ta=0;for(StatRow r:rows){tp+=r.p;tn+=r.n;ta+=r.a;} LinearLayout total=horizontal();root.addView(total);addMiniStat(total,"Participaciones",tp,GREEN);addMiniStat(total,"No respondió",tn,RED);addMiniStat(total,"Ausencias",ta,AMBER);
         TextView h=tv("Participaciones por alumno",17,NAVY,true);h.setPadding(0,dp(18),0,dp(8));root.addView(h);
-        for(StatRow r:rows){LinearLayout c=horizontal();c.setPadding(dp(14),dp(10),dp(14),dp(10));c.setBackground(bgStroke(CARD,12,BORDER));root.addView(c,lp(-1,-2,0));margin(c,0,3,0,3);TextView n=tv(r.name+"
-"+safe(r.matricula),14,NAVY,true);c.addView(n,lp(0,-2,1));TextView vals=tv("✓ "+r.p+"   ✕ "+r.n+"   — "+r.a,14,NAVY,true);vals.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);c.addView(vals);c.setOnClickListener(v->{detailStudentId=r.studentId;studentReturnScreen=7;showStudentHistory();});}
+        for(StatRow r:rows){LinearLayout c=horizontal();c.setPadding(dp(14),dp(10),dp(14),dp(10));c.setBackground(bgStroke(CARD,12,BORDER));root.addView(c,lp(-1,-2,0));margin(c,0,3,0,3);TextView n=tv(r.name+"\n"+safe(r.matricula),14,NAVY,true);c.addView(n,lp(0,-2,1));TextView vals=tv("✓ "+r.p+"   ✕ "+r.n+"   — "+r.a,14,NAVY,true);vals.setGravity(Gravity.RIGHT|Gravity.CENTER_VERTICAL);c.addView(vals);c.setOnClickListener(v->{detailStudentId=r.studentId;studentReturnScreen=7;showStudentHistory();});}
     }
     interface DateChosen{void set(String d);}
     void pickDate(String current,DateChosen cb){try{String[] p=current.split("-");int y=Integer.parseInt(p[0]),m=Integer.parseInt(p[1])-1,d=Integer.parseInt(p[2]);DatePickerDialog dlg=new DatePickerDialog(this,(v,yy,mm,dd)->cb.set(String.format(Locale.getDefault(),"%04d-%02d-%02d",yy,mm+1,dd)),y,m,d);dlg.show();}catch(Exception e){}}
