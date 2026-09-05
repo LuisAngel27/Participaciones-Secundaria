@@ -1,0 +1,23 @@
+PARTICIPACIONES SECUNDARIA v1.0
+COLEGIO VALLADOLID LA PAZ CENTRO
+
+Incluye:
+- 1AS, 1BS, 2AS y 3AS precargados con 117 alumnos y matrícula.
+- Selección aleatoria sin repetir dentro de cada ronda.
+- Participó, No respondió y Ausente.
+- Ausente se registra en historial pero NO consume el turno; el alumno sigue pendiente.
+- Reinicio de ronda en cualquier momento sin borrar registros anteriores.
+- Historial por rondas y resumen general.
+- Estadísticas por alumno.
+- Administración de grupos y alumnos.
+- Importación rápida con formato: MATRICULA | NOMBRE.
+- Respaldo y restauración de la base de datos.
+
+PARA GENERAR EL APK:
+1. Sube el contenido de esta carpeta a un repositorio de GitHub.
+2. Abre Actions > Generar APK > Run workflow.
+3. Descarga el artefacto Participaciones_Secundaria_v1.0.
+4. El APK se llama Participaciones_Secundaria_v1.0.apk.
+
+IMPORTANTE:
+Conserva siempre el mismo applicationId y el archivo participaciones-release.jks para futuras actualizaciones.

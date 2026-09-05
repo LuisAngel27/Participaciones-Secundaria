@@ -1,0 +1,27 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.luis.participaciones.secundaria'
+    compileSdk 35
+
+    signingConfigs {
+        personal {
+            storeFile file('participaciones-release.jks')
+            storePassword 'Participaciones2026'
+            keyAlias 'participaciones'
+            keyPassword 'Participaciones2026'
+        }
+    }
+
+    defaultConfig {
+        applicationId 'com.luis.participaciones.secundaria'
+        minSdk 23
+        targetSdk 35
+        versionCode 1
+        versionName '1.0'
+    }
+
+    buildTypes {
+        debug { signingConfig signingConfigs.personal }
+    }
+}
