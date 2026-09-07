@@ -21,3 +21,9 @@ PARA GENERAR EL APK:
 
 IMPORTANTE:
 Conserva siempre el mismo applicationId y el archivo participaciones-release.jks para futuras actualizaciones.
+
+
+ACTUALIZACIÓN v1.1
+- Mover alumnos entre grupos conservando historial.
+- Animación de revelado al seleccionar alumno al azar.
+- Estadísticas por grupo respetan el grupo histórico de cada participación.

@@ -12,6 +12,7 @@ import android.net.Uri;
 import android.provider.Settings;
 import android.view.*;
 import android.view.inputmethod.InputMethodManager;
+import android.view.animation.OvershootInterpolator;
 import android.widget.*;
 
 import java.io.*;
@@ -41,6 +42,7 @@ public class MainActivity extends Activity {
     long statsGroupId = -1;
     String statsFrom = "", statsTo = "";
     final Random random = new Random();
+    boolean animateSelection = false;
     static final int REQ_BACKUP = 501;
     static final int REQ_RESTORE = 502;
 
@@ -135,6 +137,17 @@ public class MainActivity extends Activity {
         Student s=currentStudentId>0?db.student(currentStudentId):null;
         TextView name=tv(s==null?"Presiona “Elegir alumno”":s.name,30,NAVY,true); name.setGravity(Gravity.CENTER); name.setPadding(0,dp(16),0,dp(6)); card.addView(name);
         TextView mat=tv(s==null?"Selección aleatoria sin repetir":"Matrícula: "+safe(s.matricula),15,MUTED,false); mat.setGravity(Gravity.CENTER); card.addView(mat);
+        if(s!=null && animateSelection){
+            animateSelection=false;
+            card.setAlpha(0f); card.setScaleX(.86f); card.setScaleY(.86f);
+            name.setAlpha(0f); name.setTranslationY(dp(14));
+            mat.setAlpha(0f);
+            card.post(()->{
+                card.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(420).setInterpolator(new OvershootInterpolator(1.15f)).start();
+                name.animate().alpha(1f).translationY(0f).setStartDelay(120).setDuration(300).start();
+                mat.animate().alpha(1f).setStartDelay(220).setDuration(260).start();
+            });
+        }
 
         LinearLayout statuses=horizontal(); statuses.setPadding(0,dp(16),0,dp(8)); root.addView(statuses);
         Button yes=button("✓ Participó",GREEN), no=button("✕ No respondió",RED), absent=button("— Ausente",AMBER);
@@ -158,7 +171,7 @@ public class MainActivity extends Activity {
         ArrayList<Student> p=db.pendingStudents(currentGroupId); if(p.isEmpty()){ new AlertDialog.Builder(this).setTitle("Ronda completa").setMessage("Ya no quedan alumnos pendientes. Puedes consultar el historial o iniciar una nueva ronda.").setPositiveButton("Nueva ronda",(d,w)->{db.restartRound(currentGroupId);currentStudentId=-1;showSession();}).setNegativeButton("Cerrar",null).show(); return; }
         if (p.size()>1 && currentStudentId>0) p.removeIf(x->x.id==currentStudentId);
         if(p.isEmpty()) p=db.pendingStudents(currentGroupId);
-        currentStudentId=p.get(random.nextInt(p.size())).id; showSession();
+        currentStudentId=p.get(random.nextInt(p.size())).id; animateSelection=true; showSession();
     }
 
     void saveResult(String r){
@@ -234,15 +247,54 @@ public class MainActivity extends Activity {
     void addGroupDialog(){ EditText e=new EditText(this);e.setHint("Ej. 3BS");e.setTextSize(18); new AlertDialog.Builder(this).setTitle("Nuevo grupo").setView(e).setNegativeButton("Cancelar",null).setPositiveButton("Agregar",(d,w)->{String n=e.getText().toString().trim().toUpperCase();if(!n.isEmpty()){db.addGroup(n);showGroups();}}).show(); }
 
     void studentsDialog(Group g){
-        LinearLayout box=vertical();box.setPadding(dp(14),0,dp(14),dp(8)); TextView info=label("Formato para importar: MATRICULA | NOMBRE (uno por línea)");box.addView(info); EditText text=new EditText(this);text.setHint("1533 | AGUIRRE QUIÑONEZ MATIAS EDUARDO");text.setMinLines(4);text.setGravity(Gravity.TOP);box.addView(text,lp(-1,dp(150),0));
-        Button imp=button("Importar / agregar alumnos",PURPLE);box.addView(imp,lp(-1,dp(48),0));margin(imp,0,8,0,8); TextView list=tv(db.studentsText(g.id),13,NAVY,false);box.addView(list);
-        ScrollView sv=new ScrollView(this);sv.addView(box); AlertDialog dlg=new AlertDialog.Builder(this).setTitle(g.name+" · Alumnos").setView(sv).setPositiveButton("Cerrar",null).create(); imp.setOnClickListener(v->{int c=db.importStudents(g.id,text.getText().toString());Toast.makeText(this,c+" alumnos agregados/actualizados",Toast.LENGTH_SHORT).show();dlg.dismiss();showGroups();}); dlg.show();
+        LinearLayout box=vertical(); box.setPadding(dp(14),0,dp(14),dp(8));
+        TextView info=label("Formato para importar: MATRICULA | NOMBRE (uno por línea)"); box.addView(info);
+        EditText text=new EditText(this); text.setHint("1533 | AGUIRRE QUIÑONEZ MATIAS EDUARDO"); text.setMinLines(3); text.setGravity(Gravity.TOP); box.addView(text,lp(-1,dp(125),0));
+        Button imp=button("Importar / agregar alumnos",PURPLE); box.addView(imp,lp(-1,dp(48),0)); margin(imp,0,8,0,12);
+        TextView h=tv("Alumnos del grupo",16,NAVY,true); h.setPadding(0,dp(4),0,dp(6)); box.addView(h);
+        ArrayList<Student> students=db.students(g.id);
+        if(students.isEmpty()){ box.addView(label("No hay alumnos en este grupo.")); }
+        for(Student s:students){
+            LinearLayout row=horizontal(); row.setPadding(dp(12),dp(8),dp(8),dp(8)); row.setBackground(bgStroke(CARD,12,BORDER)); box.addView(row,lp(-1,-2,0)); margin(row,0,3,0,3);
+            TextView n=tv(s.name+"\n"+safe(s.matricula),13,NAVY,true); row.addView(n,lp(0,-2,1));
+            Button move=button("⇄ Mover",PURPLE); move.setTextSize(13); row.addView(move,lp(dp(96),dp(44),0));
+            move.setOnClickListener(v->moveStudentDialog(s,g));
+        }
+        ScrollView sv=new ScrollView(this); sv.addView(box);
+        AlertDialog dlg=new AlertDialog.Builder(this).setTitle(g.name+" · Alumnos").setView(sv).setPositiveButton("Cerrar",null).create();
+        imp.setOnClickListener(v->{int c=db.importStudents(g.id,text.getText().toString());Toast.makeText(this,c+" alumnos agregados/actualizados",Toast.LENGTH_SHORT).show();dlg.dismiss();studentsDialog(g);});
+        dlg.show();
+    }
+
+    void moveStudentDialog(Student s, Group origin){
+        ArrayList<Group> groups=db.groups();
+        LinearLayout box=vertical(); box.setPadding(dp(14),dp(6),dp(14),dp(6));
+        TextView info=label("Selecciona el grupo al que quieres mover a este alumno:"); info.setPadding(0,0,0,dp(8)); box.addView(info);
+        boolean any=false;
+        for(Group dest:groups){
+            if(dest.id==origin.id) continue; any=true;
+            Button b=button(dest.name,PURPLE); box.addView(b,lp(-1,dp(50),0)); margin(b,0,4,0,4);
+            b.setOnClickListener(v->{
+                if(db.studentConflict(s.id,dest.id,s.matricula,s.name)){
+                    new AlertDialog.Builder(this).setTitle("No se puede mover").setMessage("Ya existe un alumno con la misma matrícula o nombre en "+dest.name+".").setPositiveButton("Cerrar",null).show();
+                    return;
+                }
+                new AlertDialog.Builder(this).setTitle("¿Mover alumno?").setMessage(s.name+"\n\n"+origin.name+"  →  "+dest.name+"\n\nSe conservará su matrícula y todo su historial de participaciones. Los registros anteriores seguirán perteneciendo al grupo donde fueron realizados.").setNegativeButton("Cancelar",null).setPositiveButton("Mover",(d,w)->{
+                    if(db.moveStudent(s.id,dest.id)){
+                        Toast.makeText(this,s.name+" movido a "+dest.name,Toast.LENGTH_LONG).show();
+                        showGroups();
+                    }else Toast.makeText(this,"No se pudo mover al alumno",Toast.LENGTH_LONG).show();
+                }).show();
+            });
+        }
+        if(!any) box.addView(label("No hay otro grupo disponible."));
+        new AlertDialog.Builder(this).setTitle("Mover · "+s.name).setView(box).setNegativeButton("Cancelar",null).show();
     }
 
     void deleteGroupConfirm(Group g){ new AlertDialog.Builder(this).setTitle("Eliminar "+g.name+"?").setMessage("Esta acción eliminará el grupo, sus alumnos, rondas y registros de participación.\n\nSe recomienda crear un respaldo desde Ajustes antes de continuar.").setNegativeButton("Cancelar",null).setPositiveButton("Eliminar",(d,w)->{db.deleteGroup(g.id);showGroups();}).show(); }
 
     void showSettings(){
-        screen=4;base("Ajustes",true); addSetting("Respaldo de datos","Guardar una copia completa de grupos, alumnos, rondas y registros",()->backup()); addSetting("Restaurar datos","Reemplazar la base local por un respaldo anterior",()->restore()); addSetting("Historial general","Consultar todas las rondas guardadas",()->showHistory()); addSetting("Estadísticas por periodo","Contar participaciones, respuestas y ausencias entre dos fechas",()->showStats()); addSetting("Administrar grupos","Agregar grupos e importar alumnos",()->showGroups()); addSetting("Acerca de","Participaciones Secundaria v1.0\nCOLEGIO VALLADOLID LA PAZ CENTRO",()->new AlertDialog.Builder(this).setTitle("Participaciones").setMessage("Versión 1.0\n\n© 2026 Profesor Luis Ángel").setPositiveButton("Cerrar",null).show());
+        screen=4;base("Ajustes",true); addSetting("Respaldo de datos","Guardar una copia completa de grupos, alumnos, rondas y registros",()->backup()); addSetting("Restaurar datos","Reemplazar la base local por un respaldo anterior",()->restore()); addSetting("Historial general","Consultar todas las rondas guardadas",()->showHistory()); addSetting("Estadísticas por periodo","Contar participaciones, respuestas y ausencias entre dos fechas",()->showStats()); addSetting("Administrar grupos","Agregar grupos e importar alumnos",()->showGroups()); addSetting("Acerca de","Participaciones Secundaria v1.1\nCOLEGIO VALLADOLID LA PAZ CENTRO",()->new AlertDialog.Builder(this).setTitle("Participaciones").setMessage("Versión 1.1\n\n© 2026 Profesor Luis Ángel").setPositiveButton("Cerrar",null).show());
     }
     interface Action{void run();}
     void addSetting(String title,String sub,Action a){LinearLayout c=vertical();c.setPadding(dp(16),dp(12),dp(16),dp(12));c.setBackground(bgStroke(CARD,14,BORDER));root.addView(c,lp(-1,-2,0));margin(c,0,4,0,4);c.addView(tv(title,16,NAVY,true));c.addView(label(sub));c.setOnClickListener(v->a.run());}
@@ -279,6 +331,9 @@ public class MainActivity extends Activity {
         long addGroup(String name){ContentValues v=new ContentValues();v.put("name",name);try{return getWritableDatabase().insertOrThrow("groups_tbl",null,v);}catch(Exception e){return -1;}}
         ArrayList<Group> groups(){ArrayList<Group>a=new ArrayList<>();Cursor c=getReadableDatabase().rawQuery("SELECT id,name FROM groups_tbl ORDER BY name COLLATE NOCASE",null);while(c.moveToNext())a.add(new Group(c.getLong(0),c.getString(1)));c.close();return a;}
         int studentCount(long g){return oneInt("SELECT COUNT(*) FROM students WHERE group_id=?",g);}
+        ArrayList<Student> students(long g){ArrayList<Student>a=new ArrayList<>();Cursor c=getReadableDatabase().rawQuery("SELECT id,group_id,matricula,name FROM students WHERE group_id=? ORDER BY name COLLATE NOCASE",new String[]{String.valueOf(g)});while(c.moveToNext())a.add(new Student(c.getLong(0),c.getLong(1),c.getString(2),c.getString(3)));c.close();return a;}
+        boolean studentConflict(long studentId,long dest,String matricula,String name){Cursor c;if(matricula!=null&&!matricula.trim().isEmpty())c=getReadableDatabase().rawQuery("SELECT COUNT(*) FROM students WHERE group_id=? AND id<>? AND TRIM(matricula)=TRIM(?)",new String[]{String.valueOf(dest),String.valueOf(studentId),matricula});else c=getReadableDatabase().rawQuery("SELECT COUNT(*) FROM students WHERE group_id=? AND id<>? AND name=? COLLATE NOCASE",new String[]{String.valueOf(dest),String.valueOf(studentId),name});boolean x=false;if(c.moveToFirst())x=c.getInt(0)>0;c.close();return x;}
+        boolean moveStudent(long studentId,long dest){ContentValues v=new ContentValues();v.put("group_id",dest);return getWritableDatabase().update("students",v,"id=?",new String[]{String.valueOf(studentId)})==1;}
         int oneInt(String q,long x){Cursor c=getReadableDatabase().rawQuery(q,new String[]{String.valueOf(x)});int n=0;if(c.moveToFirst())n=c.getInt(0);c.close();return n;}
         int oneInt2(String q,long x,String y){Cursor c=getReadableDatabase().rawQuery(q,new String[]{String.valueOf(x),y});int n=0;if(c.moveToFirst())n=c.getInt(0);c.close();return n;}
         long ensureRound(long g){Cursor c=getReadableDatabase().rawQuery("SELECT id FROM rounds WHERE group_id=? AND active=1 ORDER BY id DESC LIMIT 1",new String[]{String.valueOf(g)});long id=-1;if(c.moveToFirst())id=c.getLong(0);c.close();if(id>0)return id;ContentValues v=new ContentValues();v.put("group_id",g);v.put("label",dateLabel());v.put("started_at",now());return getWritableDatabase().insert("rounds",null,v);}
@@ -296,7 +351,7 @@ public class MainActivity extends Activity {
         ArrayList<Participation> studentHistory(long s){ArrayList<Participation>a=new ArrayList<>();Cursor c=getReadableDatabase().rawQuery("SELECT p.student_id,st.name,st.matricula,p.result,p.created_at FROM participations p JOIN students st ON st.id=p.student_id WHERE p.student_id=? ORDER BY p.id DESC",new String[]{String.valueOf(s)});while(c.moveToNext())a.add(new Participation(c.getLong(0),c.getString(1),c.getString(2),c.getString(3),c.getString(4)));c.close();return a;}
         ArrayList<RoundRow> roundsAll(){ArrayList<RoundRow>a=new ArrayList<>();Cursor c=getReadableDatabase().rawQuery("SELECT r.id,r.group_id,g.name,r.label,COUNT(p.id),SUM(CASE WHEN p.result='P' THEN 1 ELSE 0 END),SUM(CASE WHEN p.result='N' THEN 1 ELSE 0 END),SUM(CASE WHEN p.result='A' THEN 1 ELSE 0 END) FROM rounds r JOIN groups_tbl g ON g.id=r.group_id LEFT JOIN participations p ON p.round_id=r.id GROUP BY r.id ORDER BY r.id DESC",null);while(c.moveToNext()){RoundRow x=new RoundRow();x.id=c.getLong(0);x.groupId=c.getLong(1);x.groupName=c.getString(2);x.label=c.getString(3);x.total=c.getInt(4);x.p=c.getInt(5);x.n=c.getInt(6);x.a=c.getInt(7);a.add(x);}c.close();return a;}
         RoundRow round(long id){Cursor c=getReadableDatabase().rawQuery("SELECT r.id,r.group_id,g.name,r.label,COUNT(p.id),SUM(CASE WHEN p.result='P' THEN 1 ELSE 0 END),SUM(CASE WHEN p.result='N' THEN 1 ELSE 0 END),SUM(CASE WHEN p.result='A' THEN 1 ELSE 0 END) FROM rounds r JOIN groups_tbl g ON g.id=r.group_id LEFT JOIN participations p ON p.round_id=r.id WHERE r.id=? GROUP BY r.id",new String[]{String.valueOf(id)});RoundRow x=null;if(c.moveToFirst()){x=new RoundRow();x.id=c.getLong(0);x.groupId=c.getLong(1);x.groupName=c.getString(2);x.label=c.getString(3);x.total=c.getInt(4);x.p=c.getInt(5);x.n=c.getInt(6);x.a=c.getInt(7);}c.close();return x;}
-        ArrayList<StatRow> statsByPeriod(long g,String from,String to){ArrayList<StatRow>a=new ArrayList<>();Cursor c=getReadableDatabase().rawQuery("SELECT s.id,s.name,s.matricula,SUM(CASE WHEN p.result='P' THEN 1 ELSE 0 END),SUM(CASE WHEN p.result='N' THEN 1 ELSE 0 END),SUM(CASE WHEN p.result='A' THEN 1 ELSE 0 END) FROM students s LEFT JOIN participations p ON p.student_id=s.id AND substr(p.created_at,1,10)>=? AND substr(p.created_at,1,10)<=? WHERE s.group_id=? GROUP BY s.id ORDER BY 4 DESC, s.name COLLATE NOCASE",new String[]{from,to,String.valueOf(g)});while(c.moveToNext()){StatRow r=new StatRow();r.studentId=c.getLong(0);r.name=c.getString(1);r.matricula=c.getString(2);r.p=c.getInt(3);r.n=c.getInt(4);r.a=c.getInt(5);a.add(r);}c.close();return a;}
+        ArrayList<StatRow> statsByPeriod(long g,String from,String to){ArrayList<StatRow>a=new ArrayList<>();Cursor c=getReadableDatabase().rawQuery("SELECT s.id,s.name,s.matricula,SUM(CASE WHEN p.result='P' THEN 1 ELSE 0 END),SUM(CASE WHEN p.result='N' THEN 1 ELSE 0 END),SUM(CASE WHEN p.result='A' THEN 1 ELSE 0 END) FROM students s LEFT JOIN participations p ON p.student_id=s.id AND p.group_id=? AND substr(p.created_at,1,10)>=? AND substr(p.created_at,1,10)<=? WHERE s.group_id=? OR EXISTS(SELECT 1 FROM participations hx WHERE hx.student_id=s.id AND hx.group_id=?) GROUP BY s.id ORDER BY 4 DESC, s.name COLLATE NOCASE",new String[]{String.valueOf(g),from,to,String.valueOf(g),String.valueOf(g)});while(c.moveToNext()){StatRow r=new StatRow();r.studentId=c.getLong(0);r.name=c.getString(1);r.matricula=c.getString(2);r.p=c.getInt(3);r.n=c.getInt(4);r.a=c.getInt(5);a.add(r);}c.close();return a;}
         String studentsText(long g){StringBuilder b=new StringBuilder();Cursor c=getReadableDatabase().rawQuery("SELECT matricula,name FROM students WHERE group_id=? ORDER BY name COLLATE NOCASE",new String[]{String.valueOf(g)});while(c.moveToNext())b.append(c.getString(0)).append(" | ").append(c.getString(1)).append("\n");c.close();return b.toString();}
         int importStudents(long g,String text){int count=0;SQLiteDatabase d=getWritableDatabase();d.beginTransaction();try{for(String line:text.split("\\r?\\n")){line=line.trim();if(line.isEmpty())continue;String m="",n=line;String[] p=line.split("\\|",2);if(p.length==2){m=p[0].trim();n=p[1].trim();}else{p=line.split("\\t",2);if(p.length==2){m=p[0].trim();n=p[1].trim();}}if(n.isEmpty())continue;ContentValues v=new ContentValues();v.put("group_id",g);v.put("matricula",m);v.put("name",n.toUpperCase());long id=d.insertWithOnConflict("students",null,v,SQLiteDatabase.CONFLICT_IGNORE);if(id==-1 && !m.isEmpty()){ContentValues u=new ContentValues();u.put("name",n.toUpperCase());d.update("students",u,"group_id=? AND matricula=?",new String[]{String.valueOf(g),m});}count++;}d.setTransactionSuccessful();}finally{d.endTransaction();}return count;}
         void deleteGroup(long g){SQLiteDatabase d=getWritableDatabase();d.beginTransaction();try{d.delete("participations","group_id=?",new String[]{String.valueOf(g)});d.delete("rounds","group_id=?",new String[]{String.valueOf(g)});d.delete("students","group_id=?",new String[]{String.valueOf(g)});d.delete("groups_tbl","id=?",new String[]{String.valueOf(g)});d.setTransactionSuccessful();}finally{d.endTransaction();}}
