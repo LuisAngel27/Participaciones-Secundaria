@@ -132,20 +132,28 @@ public class MainActivity extends Activity {
         TextView stats=tv(consumed+" seleccionados   ·   "+pending+" pendientes de "+total,15,NAVY,true); top.addView(stats,lp(0,dp(46),1));
         Button list=button("Ver lista",PURPLE); list.setLayoutParams(lp(dp(120),dp(46),0)); list.setOnClickListener(v->showPendingDialog()); top.addView(list);
 
-        LinearLayout card=vertical(); card.setPadding(dp(24),dp(22),dp(24),dp(22)); card.setBackground(bgStroke(Color.rgb(239,245,255),20,Color.rgb(210,222,247))); root.addView(card,lp(-1,-2,0));
-        TextView small=tv(currentStudentId>0?"¡Es tu turno!":"Listo para elegir alumno",18,NAVY,true); small.setGravity(Gravity.CENTER); card.addView(small);
+        LinearLayout card=vertical(); card.setPadding(dp(34),dp(34),dp(34),dp(34)); card.setGravity(Gravity.CENTER);
+        card.setMinimumHeight(dp(285));
+        card.setBackground(bgStroke(Color.rgb(239,245,255),24,Color.rgb(190,207,245))); root.addView(card,lp(-1,-2,0));
+        TextView small=tv(currentStudentId>0?"✨  ALUMNO SELECCIONADO  ✨":"Listo para elegir alumno",20,PURPLE,true); small.setGravity(Gravity.CENTER); card.addView(small);
         Student s=currentStudentId>0?db.student(currentStudentId):null;
-        TextView name=tv(s==null?"Presiona “Elegir alumno”":s.name,30,NAVY,true); name.setGravity(Gravity.CENTER); name.setPadding(0,dp(16),0,dp(6)); card.addView(name);
-        TextView mat=tv(s==null?"Selección aleatoria sin repetir":"Matrícula: "+safe(s.matricula),15,MUTED,false); mat.setGravity(Gravity.CENTER); card.addView(mat);
+        TextView name=tv(s==null?"Presiona “Elegir alumno”":s.name,42,NAVY,true); name.setGravity(Gravity.CENTER); name.setPadding(dp(8),dp(24),dp(8),dp(14)); name.setMaxLines(3); card.addView(name);
+        TextView mat=tv(s==null?"Selección aleatoria sin repetir":"Matrícula: "+safe(s.matricula),18,MUTED,true); mat.setGravity(Gravity.CENTER); card.addView(mat);
         if(s!=null && animateSelection){
             animateSelection=false;
-            card.setAlpha(0f); card.setScaleX(.86f); card.setScaleY(.86f);
-            name.setAlpha(0f); name.setTranslationY(dp(14));
-            mat.setAlpha(0f);
+            card.setAlpha(.05f); card.setScaleX(.62f); card.setScaleY(.62f); card.setRotation(-3.5f); card.setTranslationY(dp(46));
+            small.setAlpha(0f); small.setScaleX(.75f); small.setScaleY(.75f);
+            name.setAlpha(0f); name.setScaleX(.55f); name.setScaleY(.55f); name.setTranslationY(dp(24));
+            mat.setAlpha(0f); mat.setTranslationY(dp(12));
             card.post(()->{
-                card.animate().alpha(1f).scaleX(1f).scaleY(1f).setDuration(420).setInterpolator(new OvershootInterpolator(1.15f)).start();
-                name.animate().alpha(1f).translationY(0f).setStartDelay(120).setDuration(300).start();
-                mat.animate().alpha(1f).setStartDelay(220).setDuration(260).start();
+                card.animate().alpha(1f).scaleX(1.04f).scaleY(1.04f).rotation(0f).translationY(0f)
+                        .setDuration(560).setInterpolator(new OvershootInterpolator(1.35f))
+                        .withEndAction(()-> card.animate().scaleX(1f).scaleY(1f).setDuration(170).start()).start();
+                small.animate().alpha(1f).scaleX(1f).scaleY(1f).setStartDelay(170).setDuration(330).setInterpolator(new OvershootInterpolator(1.2f)).start();
+                name.animate().alpha(1f).scaleX(1.08f).scaleY(1.08f).translationY(0f).setStartDelay(230).setDuration(440)
+                        .setInterpolator(new OvershootInterpolator(1.55f))
+                        .withEndAction(()-> name.animate().scaleX(1f).scaleY(1f).setDuration(180).start()).start();
+                mat.animate().alpha(1f).translationY(0f).setStartDelay(440).setDuration(300).start();
             });
         }
 

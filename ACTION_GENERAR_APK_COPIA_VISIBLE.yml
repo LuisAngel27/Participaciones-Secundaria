@@ -25,10 +25,10 @@ jobs:
         run: gradle assembleDebug
 
       - name: Cambiar nombre del APK
-        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Participaciones_Secundaria_v1.1.apk
+        run: mv app/build/outputs/apk/debug/app-debug.apk app/build/outputs/apk/debug/Participaciones_Secundaria_v1.2.apk
 
       - name: Subir APK
         uses: actions/upload-artifact@v4
         with:
-          name: Participaciones_Secundaria_v1.1
-          path: app/build/outputs/apk/debug/Participaciones_Secundaria_v1.1.apk
+          name: Participaciones_Secundaria_v1.2
+          path: app/build/outputs/apk/debug/Participaciones_Secundaria_v1.2.apk

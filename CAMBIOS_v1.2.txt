@@ -1,0 +1,8 @@
+PARTICIPACIONES SECUNDARIA v1.2
+
+- Área del alumno seleccionado mucho más grande para aprovechar la pantalla de la tablet.
+- Nombre del alumno en tipografía notablemente mayor.
+- Matrícula más visible.
+- Animación de selección más llamativa: entrada con zoom, giro suave, rebote y aparición escalonada del nombre y matrícula.
+- Conserva la función de mover alumnos entre grupos de v1.1.
+- Misma aplicación y misma firma: instalar ENCIMA de la versión actual. NO desinstalar.
